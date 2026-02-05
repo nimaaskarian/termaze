@@ -5,6 +5,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <time.h>
 #include <ncurses.h>
 
 #include "termaze.h"
@@ -41,14 +42,20 @@ int main(int argc, char *argv[])
   refresh();
 
   char line[256];
+  struct timespec ts;
+  static const int milliseconds = 200;
+  ts.tv_sec = milliseconds / 1000;
+  ts.tv_nsec = (milliseconds % 1000) * 1000000;
   while (fgets(line, sizeof(line), stdin)) {
-    sleep(1);
+    nanosleep(&ts, NULL);
     if (strcmp(line, "move\n") == 0) {
       game_move_player(&game);
     } else if (strcmp(line, "rotate\n") == 0) {
       game_rotate_player(&game, 1);
     } else if (strcmp(line, "rotate -90\n") == 0) {
       game_rotate_player(&game, -1);
+    } else if (strcmp(line, "light\n") == 0) {
+      game_light(&game);
     }
     #if __DEBUG
     fprintf(stderr, "info: cmd got \"%s\"\n", line);

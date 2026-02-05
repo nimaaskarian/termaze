@@ -5,5 +5,5 @@ NCURSESLIBS = `pkg-config --libs ncurses`
 INC=${NCURSESINC}
 LIBS=${NCURSESLIBS}
 
-CFLAGS=-std=c99 -pedantic -Wall -Wno-unused-function -Wno-deprecated-declarations -O3 -march=native ${INCS}
+CFLAGS=-pedantic -Wall -Wno-unused-function -Wno-deprecated-declarations -O3 -march=native ${INCS}
 LDFLAGS=${LIBS}

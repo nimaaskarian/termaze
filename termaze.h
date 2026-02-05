@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #define CHAR_PATH 'P'
 #define CHAR_LIGHT 'L'
+#define CHAR_LIGHT_ON 'O'
 #define CHAR_IGNORE ' '
 #define CHAR_PLEFT '<'
 #define CHAR_PRIGHT '>'
@@ -34,13 +35,14 @@ typedef struct game {
   lines_t lines;
 } game_t;
 
+void ncurses_init();
 lines_t get_lines(char* input);
+player_t lines_draw_ncurses_return_player(lines_t lines);
 game_t game_init(char* input);
 void game_print_player(game_t* game);
 int game_move_player(game_t* game);
-void ncurses_init();
-player_t lines_draw_ncurses_return_player(lines_t lines);
 void game_rotate_player(game_t* game, int rotate);
+int game_light(game_t* game);
 
 enum color {
   WHITE = 1,

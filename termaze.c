@@ -16,7 +16,7 @@ void ncurses_init()
   init_pair(BLACK, COLOR_WHITE, COLOR_BLACK);
   init_pair(WHITE, COLOR_BLACK, COLOR_WHITE);
   init_pair(GREEN, COLOR_BLACK, COLOR_GREEN);
-  init_pair(YELLOW, COLOR_WHITE, COLOR_YELLOW);
+  init_pair(YELLOW, COLOR_BLACK, COLOR_YELLOW);
   init_pair(RED, COLOR_WHITE, COLOR_RED);
   init_pair(BLUE, COLOR_WHITE, COLOR_BLUE);
 }
@@ -31,28 +31,28 @@ game_t game_init(char *input)
   return game;
 }
 
-#define PRINT_LIGHT(y, x) {\
+#define ATTR_ON_LIGHT() {\
   attron(COLOR_PAIR(WHITE));\
-  mvprintw(y, x, " ");\
 }
 
-#define PRINT_LIGHT_ON(y, x) {\
+#define ATTR_ON_LIGHT_ON() {\
   attron(COLOR_PAIR(YELLOW));\
-  mvprintw(y, x, " ");\
 }
 
-#define PRINT_PATH(y, x) {\
+#define ATTR_ON_PATH() {\
   attron(COLOR_PAIR(GREEN));\
-  mvprintw(y, x, " ");\
 }
 
-#define PRINT_CHAR(Y, X, C) {\
+#define ATTR_ON_CHAR(C) {\
     switch (C) {\
       case CHAR_PATH:\
-        PRINT_PATH(Y, X);\
+        ATTR_ON_PATH();\
       break;\
       case CHAR_LIGHT:\
-        PRINT_LIGHT(Y, X);\
+        ATTR_ON_LIGHT();\
+      break;\
+      case CHAR_LIGHT_ON:\
+        ATTR_ON_LIGHT_ON();\
       break;\
     }\
 }
@@ -60,7 +60,8 @@ game_t game_init(char *input)
 // helper for game_move_player
 #define PRINT_CUR_CHAR() {\
     char ch = game->lines.buff[game->player.y][game->player.x];\
-    PRINT_CHAR(game->player.y, game->player.x, ch);\
+    ATTR_ON_CHAR(ch);\
+    mvprintw(game->player.y, game->player.x, " ");\
 }
 
 // give -1 to rotate for counter clockwise, and 1 for clockwise
@@ -74,6 +75,16 @@ void game_rotate_player(game_t* game, int rotate)
     game->player.dir = DIR_MIN+1;
   }
   game_print_player(game);
+}
+
+int game_light(game_t* game)
+{
+  if (game->lines.buff[game->player.y][game->player.x] == 'L') {
+    game->lines.buff[game->player.y][game->player.x] = 'O';
+    game_print_player(game);
+    return EXIT_SUCCESS;
+  }
+  return EXIT_FAILURE;
 }
 
 // returns EXIT_SUCCESS (0) on success. EXIT_FAILIURE otherwise
@@ -120,14 +131,7 @@ int game_move_player(game_t* game)
 #define PLAYER_PRINT(S) mvprintw(game->player.y, game->player.x, S)
 void game_print_player(game_t* game)
 {
-  switch (game->lines.buff[game->player.y][game->player.x]) {
-    case CHAR_PATH:
-      attron(COLOR_PAIR(GREEN));
-    break;
-    case CHAR_LIGHT:
-      attron(COLOR_PAIR(WHITE));
-    break;
-  }
+  ATTR_ON_CHAR(game->lines.buff[game->player.y][game->player.x]);
   switch (game->player.dir) {
     case down:
     PLAYER_PRINT("↓");
@@ -190,10 +194,12 @@ player_t lines_draw_ncurses_return_player(lines_t lines)
       #endif /* if __DEBUG */
       switch (line[x]) {
         case CHAR_PATH:
-          PRINT_PATH(y, x);
+          ATTR_ON_PATH();
+          mvprintw(y, x, " ");
         break;
         case CHAR_LIGHT:
-          PRINT_LIGHT(y, x);
+          ATTR_ON_LIGHT();
+          mvprintw(y, x, " ");
         break;
         case CHAR_PRIGHT:
           PLAYER_INIT(right)
