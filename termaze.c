@@ -100,7 +100,7 @@ int game_move_player(game_t* game)
       game->player.y--;
     break;
     case down:
-      if (game->player.y >= game->lines.size 
+      if (game->player.y+1 >= game->lines.size 
         || game->lines.buff[game->player.y+1][game->player.x] == ' ') {
         return EXIT_FAILURE;
       }
@@ -116,7 +116,7 @@ int game_move_player(game_t* game)
       game->player.x--;
     break;
     case right:
-      if (game->player.x >= game->lines.sizes[game->player.y] 
+      if (game->player.x+1 >= game->lines.sizes[game->player.y] 
         || game->lines.buff[game->player.y][game->player.x+1] == ' ') {
         return EXIT_FAILURE;
       }
