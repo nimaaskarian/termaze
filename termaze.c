@@ -15,7 +15,7 @@ void ncurses_init()
   start_color();
   init_pair(BLACK, COLOR_WHITE, COLOR_BLACK);
   init_pair(WHITE, COLOR_BLACK, COLOR_WHITE);
-  init_pair(GREEN, COLOR_WHITE, COLOR_GREEN);
+  init_pair(GREEN, COLOR_BLACK, COLOR_GREEN);
   init_pair(YELLOW, COLOR_WHITE, COLOR_YELLOW);
   init_pair(RED, COLOR_WHITE, COLOR_RED);
   init_pair(BLUE, COLOR_WHITE, COLOR_BLUE);
@@ -26,8 +26,9 @@ game_t game_init(char *input)
   ncurses_init();
   lines_t lines = get_lines(input);
   player_t player = lines_draw_ncurses_return_player(lines);
-  game_t out = {.player = player, .lines = lines};
-  return out;
+  game_t game = {.player = player, .lines = lines};
+  game_print_player(&game);
+  return game;
 }
 
 #define PRINT_LIGHT(y, x) {\
@@ -47,10 +48,6 @@ game_t game_init(char *input)
 
 #define PRINT_CHAR(Y, X, C) {\
     switch (C) {\
-      case CHAR_PLEFT:\
-      case CHAR_PRIGHT:\
-      case CHAR_PUP:\
-      case CHAR_PDOWN:\
       case CHAR_PATH:\
         PRINT_PATH(Y, X);\
       break;\
@@ -67,16 +64,16 @@ game_t game_init(char *input)
 }
 
 // give -1 to rotate for counter clockwise, and 1 for clockwise
-void player_rotate(player_t* player, int rotate)
+void game_rotate_player(game_t* game, int rotate)
 {
-  player->dir+=rotate;
-  if (player->dir == DIR_MIN) {
-    player->dir = DIR_MAX-1;
+  game->player.dir+=rotate;
+  if (game->player.dir == DIR_MIN) {
+    game->player.dir = DIR_MAX-1;
   }
-  if (player->dir == DIR_MAX) {
-    player->dir = DIR_MIN+1;
+  if (game->player.dir == DIR_MAX) {
+    game->player.dir = DIR_MIN+1;
   }
-  print_player(player);
+  game_print_player(game);
 }
 
 // returns EXIT_SUCCESS (0) on success. EXIT_FAILIURE otherwise
@@ -116,15 +113,22 @@ int game_move_player(game_t* game)
       game->player.x++;
     break;
   }
-  print_player(&game->player);
+  game_print_player(game);
   return EXIT_SUCCESS;
 }
 
-#define PLAYER_PRINT(S) mvprintw(player->y, player->x, S)
-void print_player(player_t* player)
+#define PLAYER_PRINT(S) mvprintw(game->player.y, game->player.x, S)
+void game_print_player(game_t* game)
 {
-  attron(COLOR_PAIR(BLACK));
-  switch (player->dir) {
+  switch (game->lines.buff[game->player.y][game->player.x]) {
+    case CHAR_PATH:
+      attron(COLOR_PAIR(GREEN));
+    break;
+    case CHAR_LIGHT:
+      attron(COLOR_PAIR(WHITE));
+    break;
+  }
+  switch (game->player.dir) {
     case down:
     PLAYER_PRINT("↓");
     break;
@@ -142,13 +146,14 @@ void print_player(player_t* player)
 
 #define PLAYER_INIT(DIR) {\
 if (player_defined) {\
-  fprintf(stderr, "Player already defined. line %d:%d\n", x,y);\
+  fprintf(stderr, "error: player already defined. line %d:%d\n", x,y);\
   exit(1);\
 }\
 player.x = x;\
 player.y = y;\
 player.dir = DIR;\
 player_defined = true;\
+line[x] = 'P';\
 }
 
 // TODO: use \n\r in windows. also fix the fixed size line size
@@ -180,7 +185,9 @@ player_t lines_draw_ncurses_return_player(lines_t lines)
   for (int y = 0; y < lines.size; y++) {
     char* line = lines.buff[y];
     for (int x = 0; x < lines.sizes[y]; x++) {
-    fprintf(stderr, "x: %d, y: %d\n", x, y);
+      #if __DEBUG
+      fprintf(stderr, "x: %d, y: %d\n", x, y);
+      #endif /* if __DEBUG */
       switch (line[x]) {
         case CHAR_PATH:
           PRINT_PATH(y, x);
@@ -203,11 +210,12 @@ player_t lines_draw_ncurses_return_player(lines_t lines)
         case CHAR_IGNORE:
         break;
         default:
+        #if __WARN | __DEBUG
         fprintf(stderr, "warning: invalid char '%c' replaced with '%c'", *line, CHAR_IGNORE);
+        #endif /* if __WARN | __DEBUG */
         line[x] = ' ';
       }
     }
   }
-  print_player(&player);
   return player;
 }

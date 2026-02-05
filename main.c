@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <ncurses.h>
@@ -30,9 +31,13 @@ int main(int argc, char *argv[])
     fread(buffer, 1, length, fp);
   }
   fclose(fp);
+  #if __DEBUG
   fputs("game init started\n", stderr);
+  #endif // __DEBUG
   game_t game = game_init(buffer);
+  #if __DEBUG
   fputs("game init successful\n", stderr);
+  #endif // __DEBUG
   refresh();
 
   char line[256];
@@ -41,15 +46,18 @@ int main(int argc, char *argv[])
     if (strcmp(line, "move\n") == 0) {
       game_move_player(&game);
     } else if (strcmp(line, "rotate\n") == 0) {
-      player_rotate(&game.player, 1);
+      game_rotate_player(&game, 1);
     } else if (strcmp(line, "rotate -90\n") == 0) {
-      player_rotate(&game.player, -1);
+      game_rotate_player(&game, -1);
     }
+    #if __DEBUG
     fprintf(stderr, "info: cmd got \"%s\"\n", line);
+    #endif // __DEBUG
     refresh();
   }
-  fprintf(stderr, "finished reading stdin\n");
-  for (;;) {}
+  for (;;) {
+    sleep(UINT_MAX);
+  }
   return EXIT_SUCCESS;
 }
 

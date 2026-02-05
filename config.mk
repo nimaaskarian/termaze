@@ -1,3 +1,4 @@
+PREFIX = /usr/local
 NCURSESINC = `pkg-config --cflags ncurses`
 NCURSESLIBS = `pkg-config --libs ncurses`
 
