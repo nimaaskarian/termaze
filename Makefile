@@ -4,6 +4,9 @@ SRC=main.c
 OBJ=${SRC:.c=.o}
 BIN=thecodinggame
 
+run: ${BIN}
+	./${BIN} level
+
 all: ${BIN}
 
 $(BIN): ${OBJ}
