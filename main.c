@@ -14,23 +14,23 @@
 int main(int argc, char *argv[])
 {
   int c;
-  int milliseconds = 100;
+  int tick_time_ms = 100;
   while (true) {
     static struct option long_options[] =
           {
-            {"milliseconds",     required_argument,       0, 'm'},
+            {"tick-time",     required_argument,       0, 't'},
             {0, 0, 0, 0}
           };
     
-    c = getopt_long (argc, argv, "m", long_options, 0);
+    c = getopt_long (argc, argv, "t", long_options, 0);
     if (c == -1) {
       break;
     }
     switch (c) {
       case 0:
         break;
-      case 'm':
-      milliseconds = atoi(optarg);
+      case 't':
+      tick_time_ms = atoi(optarg);
     }
   }
   if (argc-optind != 1) {
@@ -64,8 +64,8 @@ int main(int argc, char *argv[])
 
   char line[256];
   struct timespec ts;
-  ts.tv_sec = milliseconds / 1000;
-  ts.tv_nsec = (milliseconds % 1000) * 1000000;
+  ts.tv_sec = tick_time_ms / 1000;
+  ts.tv_nsec = (tick_time_ms % 1000) * 1000000;
   while (fgets(line, sizeof(line), stdin)) {
     nanosleep(&ts, NULL);
     if (strcmp(line, "move\n") == 0) {
