@@ -150,6 +150,7 @@ void game_print_player(game_t* game)
 
 #define PLAYER_INIT(DIR) {\
 if (player_defined) {\
+  endwin();\
   fprintf(stderr, "error: player already defined. line %d:%d\n", x,y);\
   exit(1);\
 }\
@@ -169,6 +170,7 @@ lines_t get_lines(char* input)
   while (buff[i]) {
     i++;
     if (i >= MAX_LINE_SIZE) {
+      endwin();\
       fprintf(stderr, "error: max line size exeeded. this shouldn't have happend. if it did, shame the author in https://github.com/nimaaskarian/termaze/issues\n");
       exit(1);
     }
