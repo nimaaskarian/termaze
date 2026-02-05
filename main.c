@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <locale.h>
 #include <ctype.h>
+#include <unistd.h>
 #include <ncurses.h>
 
 #include "termaze.h"
@@ -27,25 +27,28 @@ int main(int argc, char *argv[])
   buffer = malloc(sizeof(char) * length);
   if (buffer)
   {
-    fread (buffer, 1, length, fp);
+    fread(buffer, 1, length, fp);
   }
-  fclose (fp);
-  setlocale(LC_ALL, "");
-  initscr();
-  cbreak();
-  noecho();
-  curs_set(0);
-  start_color();
-  init_pair(BLACK, COLOR_WHITE, COLOR_BLACK);
-  init_pair(WHITE, COLOR_BLACK, COLOR_WHITE);
-  init_pair(GREEN, COLOR_WHITE, COLOR_GREEN);
-  init_pair(YELLOW, COLOR_WHITE, COLOR_YELLOW);
-  init_pair(RED, COLOR_WHITE, COLOR_RED);
-  init_pair(BLUE, COLOR_WHITE, COLOR_BLUE);
-  lines_t lines = get_buff(buffer);
-  parse_level(lines);
-
+  fclose(fp);
+  fputs("game init started\n", stderr);
+  game_t game = game_init(buffer);
+  fputs("game init successful\n", stderr);
   refresh();
+
+  char line[256];
+  while (fgets(line, sizeof(line), stdin)) {
+    sleep(1);
+    if (strcmp(line, "move\n") == 0) {
+      game_move_player(&game);
+    } else if (strcmp(line, "rotate\n") == 0) {
+      player_rotate(&game.player, 1);
+    } else if (strcmp(line, "rotate -90\n") == 0) {
+      player_rotate(&game.player, -1);
+    }
+    fprintf(stderr, "info: cmd got \"%s\"\n", line);
+    refresh();
+  }
+  fprintf(stderr, "finished reading stdin\n");
   for (;;) {}
   return EXIT_SUCCESS;
 }
