@@ -1,4 +1,4 @@
-#include <curses.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,6 +49,8 @@ int main(int argc, char *argv[])
   init_pair(WHITE, COLOR_WHITE, COLOR_BLACK);
   init_pair(GREEN, COLOR_GREEN, COLOR_BLACK);
   init_pair(YELLOW, COLOR_YELLOW, COLOR_BLACK);
+  init_pair(RED, COLOR_RED, COLOR_BLACK);
+  init_pair(BLUE, COLOR_BLUE, COLOR_BLACK);
   parse_level(buffer);
   refresh();
   for (;;) {}
@@ -57,9 +59,10 @@ int main(int argc, char *argv[])
 
 void parse_level(const char * input) {
   int x = 0, y = 0;
+  bool found_start = false;
   for (;*input; input++) {
     switch (*input) {
-      case 'B':
+      case 'P':
         attron(COLOR_PAIR(GREEN));
         mvprintw(y, x, "█");
         x+=1;
@@ -69,6 +72,12 @@ void parse_level(const char * input) {
         mvprintw(y, x, "█");
         x+=1;
       break;
+      case 'S':
+        attron(COLOR_PAIR(RED));
+        mvprintw(y, x, "█");
+        x+=1;
+        found_start = 1;
+      break;
       case ' ':
         x+=1;
       break;
@@ -77,5 +86,9 @@ void parse_level(const char * input) {
         x=0;
       break;
     }
+  }
+  if (!found_start) {
+    attron(COLOR_PAIR(RED));
+    mvprintw(0, 0, "█");
   }
 }
