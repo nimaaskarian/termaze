@@ -6,17 +6,38 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <time.h>
+#include <getopt.h>
 #include <ncurses.h>
 
 #include "termaze.h"
 
 int main(int argc, char *argv[])
 {
-  if (argc != 2) {
-    fputs("usage: thecodinggame <level-file>\n", stderr);
+  int c;
+  int milliseconds = 100;
+  while (true) {
+    static struct option long_options[] =
+          {
+            {"milliseconds",     required_argument,       0, 'm'},
+            {0, 0, 0, 0}
+          };
+    
+    c = getopt_long (argc, argv, "m", long_options, 0);
+    if (c == -1) {
+      break;
+    }
+    switch (c) {
+      case 0:
+        break;
+      case 'm':
+      milliseconds = atoi(optarg);
+    }
+  }
+  if (argc-optind != 1) {
+    fputs("usage: termaze [OPTION]... [FILE]\n", stderr);
     return EXIT_FAILURE;
   }
-  FILE* fp = fopen(argv[1], "r");
+  FILE* fp = fopen(argv[optind++], "r");
   if (fp == NULL) {
     fputs("error: failed opening file\n", stderr);
     return EXIT_FAILURE;
@@ -43,7 +64,6 @@ int main(int argc, char *argv[])
 
   char line[256];
   struct timespec ts;
-  static const int milliseconds = 200;
   ts.tv_sec = milliseconds / 1000;
   ts.tv_nsec = (milliseconds % 1000) * 1000000;
   while (fgets(line, sizeof(line), stdin)) {
