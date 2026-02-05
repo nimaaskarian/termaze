@@ -1,11 +1,8 @@
 include config.mk
 
-SRC=main.c
+SRC=main.c termaze.c
 OBJ=${SRC:.c=.o}
-BIN=thecodinggame
-
-run: ${BIN}
-	./${BIN} level
+BIN=termaze
 
 all: ${BIN}
 

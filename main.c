@@ -6,17 +6,7 @@
 #include <ctype.h>
 #include <ncurses.h>
 
-
-int parse_times(const char ** input);
-void parse_level(const char * input);
-
-enum Color {
-  WHITE = 1,
-  GREEN,
-  YELLOW,
-  RED,
-  BLUE,
-};
+#include "termaze.h"
 
 int main(int argc, char *argv[])
 {
@@ -46,49 +36,17 @@ int main(int argc, char *argv[])
   noecho();
   curs_set(0);
   start_color();
-  init_pair(WHITE, COLOR_WHITE, COLOR_BLACK);
-  init_pair(GREEN, COLOR_GREEN, COLOR_BLACK);
-  init_pair(YELLOW, COLOR_YELLOW, COLOR_BLACK);
-  init_pair(RED, COLOR_RED, COLOR_BLACK);
-  init_pair(BLUE, COLOR_BLUE, COLOR_BLACK);
-  parse_level(buffer);
+  init_pair(BLACK, COLOR_WHITE, COLOR_BLACK);
+  init_pair(WHITE, COLOR_BLACK, COLOR_WHITE);
+  init_pair(GREEN, COLOR_WHITE, COLOR_GREEN);
+  init_pair(YELLOW, COLOR_WHITE, COLOR_YELLOW);
+  init_pair(RED, COLOR_WHITE, COLOR_RED);
+  init_pair(BLUE, COLOR_WHITE, COLOR_BLUE);
+  lines_t lines = get_buff(buffer);
+  parse_level(lines);
+
   refresh();
   for (;;) {}
   return EXIT_SUCCESS;
 }
 
-void parse_level(const char * input) {
-  int x = 0, y = 0;
-  bool found_start = false;
-  for (;*input; input++) {
-    switch (*input) {
-      case 'P':
-        attron(COLOR_PAIR(GREEN));
-        mvprintw(y, x, "█");
-        x+=1;
-      break;
-      case 'L':
-        attron(COLOR_PAIR(YELLOW));
-        mvprintw(y, x, "█");
-        x+=1;
-      break;
-      case 'S':
-        attron(COLOR_PAIR(RED));
-        mvprintw(y, x, "█");
-        x+=1;
-        found_start = 1;
-      break;
-      case ' ':
-        x+=1;
-      break;
-      case '\n':
-        y+=1;
-        x=0;
-      break;
-    }
-  }
-  if (!found_start) {
-    attron(COLOR_PAIR(RED));
-    mvprintw(0, 0, "█");
-  }
-}
