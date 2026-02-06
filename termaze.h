@@ -70,6 +70,7 @@ lines_t get_lines(char* input);
 void game_redraw(game_t* game);
 player_t parse_lines_return_player(lines_t lines);
 game_t game_init(char* input);
+bool game_check_finished(game_t* game);
 void game_print_player(game_t* game);
 int game_move_player(game_t* game);
 void game_rotate_player(game_t* game, int rotate);

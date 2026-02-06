@@ -18,7 +18,7 @@ void ncurses_init()
   init_pair(WHITE, COLOR_BLACK, COLOR_WHITE);
   init_pair(GREEN, COLOR_BLACK, COLOR_GREEN);
   init_pair(YELLOW, COLOR_BLACK, COLOR_YELLOW);
-  init_pair(RED, COLOR_WHITE, COLOR_RED);
+  init_pair(RED, COLOR_BLACK, COLOR_RED);
   init_pair(BLUE, COLOR_WHITE, COLOR_BLUE);
 }
 
@@ -60,7 +60,6 @@ void game_rotate_player(game_t* game, int rotate)
 
 int game_light(game_t* game)
 {
-  
   switch (game->lines.buff[game->player.y][game->player.x]) {
     case LIGHT:
       game->lines.buff[game->player.y][game->player.x] = LIGHT_ON;
@@ -71,6 +70,18 @@ int game_light(game_t* game)
   }
   game_print_player(game);
   return EXIT_FAILURE;
+}
+
+bool game_check_finished(game_t* game)
+{
+  for (int y = 0; y < game->lines.size; y++) {
+    for (int x = 0; x < game->lines.sizes[y]; x++) {
+      if (game->lines.buff[x][y] == LIGHT) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 #define die_dir_min_max_cases() case DIR_MIN:\

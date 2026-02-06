@@ -138,6 +138,15 @@ int main(int argc, char *argv[])
     fprintf(stderr, "info: cmd got \"%s\"\n", line);
     #endif // __DEBUG
   }
+  WINDOW* win = newwin(1, maxx, maxy-1, 0);
+  if (game_check_finished(&game)) {
+    wattron(win, COLOR_PAIR(GREEN));
+    mvwprintw(win, 0, 0, "game over. congratulations!");
+  } else {
+    wattron(win, COLOR_PAIR(RED));
+    mvwprintw(win, 0, 0, "game stil not over. but your moves are.");
+  }
+  wrefresh(win);
   for (;;) {
     sleep(UINT_MAX);
   }
