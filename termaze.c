@@ -2,13 +2,13 @@
 #include <stdlib.h>
 #include <ncurses.h>
 #include <string.h>
+#include <locale.h>
 #include "termaze.h"
 
 void ncurses_init()
 {
+  setlocale(LC_ALL, "");
   initscr();
-  leaveok(stdscr, TRUE);
-  immedok(stdscr, FALSE);
   cbreak();
   noecho();
   curs_set(0);
@@ -66,15 +66,15 @@ game_t game_init(char *input)
     }\
 }
 
-#define gameprintonplayer(game, C) {\
-  mvwaddch(game->win, game->player.y, game->player.x, C);\
+#define gameprintonplayer(game, S) {\
+  mvwprintw(game->win, game->player.y, game->player.x, S);\
 }
 
 // helper for game_move_player
 #define PRINT_CUR_CHAR() {\
     char ch = game->lines.buff[game->player.y][game->player.x];\
     attr_char(ch, on);\
-    gameprintonplayer(game, ' ');\
+    gameprintonplayer(game, " ");\
     attr_char(ch, off);\
     wrefresh(game->win);\
 }
@@ -153,19 +153,20 @@ void game_print_player(game_t* game)
   attr_char(game->lines.buff[game->player.y][game->player.x], on);
   switch (game->player.dir) {
     case down:
-    gameprintonplayer(game, 'v');
+    gameprintonplayer(game, "↓");
     break;
     case right:
-    gameprintonplayer(game, '>');
+    gameprintonplayer(game, "→");
     break;
     case left:
-    gameprintonplayer(game, '<');
+    gameprintonplayer(game, "←");
     break;
     case up:
-    gameprintonplayer(game, '^');
+    gameprintonplayer(game, "↑");
     break;
   }
   attr_char(game->lines.buff[game->player.y][game->player.x], off);
+  wrefresh(game->win);
 }
 
 #define PLAYER_INIT(DIR) {\
@@ -214,12 +215,11 @@ void game_redraw(game_t* game)
     char* line = game->lines.buff[y];
     for (int x = 0; x < game->lines.sizes[y]; x++) {
       attr_char(line[x], on);
-      mvwaddch(game->win, y, x, ' ');\
+      mvwprintw(game->win, y, x, " ");\
       attr_char(line[x], off);
     }
   }
   game_print_player(game);
-  wrefresh(game->win);
 }
 
 player_t parse_lines_return_player(lines_t lines)
