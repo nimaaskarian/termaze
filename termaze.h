@@ -1,6 +1,7 @@
 #ifndef TERMAZE_H
 #define TERMAZE_H
 #define MAX_LINE_SIZE 4096
+#include <ncurses.h>
 #include <stdlib.h>
 #define CHAR_PATH 'P'
 #define CHAR_LIGHT 'L'
@@ -28,17 +29,19 @@ typedef struct lines {
   char** buff;
   size_t size;
   size_t* sizes;
+  int max_size;
 } lines_t;
 
 typedef struct game {
   player_t player;
   lines_t lines;
+  WINDOW* win;
 } game_t;
 
 void ncurses_init();
 lines_t get_lines(char* input);
 void game_redraw(game_t* game);
-player_t lines_draw_ncurses_return_player(lines_t lines);
+player_t parse_lines_return_player(lines_t lines);
 game_t game_init(char* input);
 void game_print_player(game_t* game);
 int game_move_player(game_t* game);

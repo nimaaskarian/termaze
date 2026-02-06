@@ -2,20 +2,18 @@
 #include <stdlib.h>
 #include <ncurses.h>
 #include <string.h>
-#include <locale.h>
 #include "termaze.h"
 
 void ncurses_init()
 {
-  setlocale(LC_ALL, "");
   initscr();
+  leaveok(stdscr, TRUE);
+  immedok(stdscr, FALSE);
   cbreak();
   noecho();
   curs_set(0);
   start_color();
   nodelay(stdscr, true);
-  keypad(stdscr, true);
-  timeout(0);
   init_pair(BLACK, COLOR_WHITE, COLOR_BLACK);
   init_pair(WHITE, COLOR_BLACK, COLOR_WHITE);
   init_pair(GREEN, COLOR_BLACK, COLOR_GREEN);
@@ -27,26 +25,28 @@ void ncurses_init()
 game_t game_init(char *input)
 {
   lines_t lines = get_lines(input);
-  player_t player = lines_draw_ncurses_return_player(lines);
+  player_t player = parse_lines_return_player(lines);
   game_t game = {.player = player, .lines = lines};
-  game_print_player(&game);
+  game.win = newwin(lines.size, lines.max_size, 0, 0);
+  box(game.win, 0, 0);
+  game_redraw(&game);
   return game;
 }
 
 #define attr_light(on) {\
-  attron(COLOR_PAIR(WHITE));\
+  wattron(game->win, COLOR_PAIR(WHITE));\
 }
 
 #define attr_light_on(on) {\
-  attron(COLOR_PAIR(YELLOW));\
+  wattron(game->win, COLOR_PAIR(YELLOW));\
 }
 
 #define attr_path(on) {\
-  attron(COLOR_PAIR(GREEN));\
+  wattron(game->win, COLOR_PAIR(GREEN));\
 }
 
 #define attr_ignore(on) {\
-  attron(COLOR_PAIR(BLACK));\
+  wattron(game->win, COLOR_PAIR(BLACK));\
 }
 
 #define attr_char(C, on) {\
@@ -66,12 +66,17 @@ game_t game_init(char *input)
     }\
 }
 
+#define gameprintonplayer(game, C) {\
+  mvwaddch(game->win, game->player.y, game->player.x, C);\
+}
+
 // helper for game_move_player
 #define PRINT_CUR_CHAR() {\
     char ch = game->lines.buff[game->player.y][game->player.x];\
     attr_char(ch, on);\
-    mvprintw(game->player.y, game->player.x, " ");\
+    gameprintonplayer(game, ' ');\
     attr_char(ch, off);\
+    wrefresh(game->win);\
 }
 
 // give -1 to rotate for counter clockwise, and 1 for clockwise
@@ -89,11 +94,16 @@ void game_rotate_player(game_t* game, int rotate)
 
 int game_light(game_t* game)
 {
-  if (game->lines.buff[game->player.y][game->player.x] == 'L') {
-    game->lines.buff[game->player.y][game->player.x] = 'O';
-    game_print_player(game);
-    return EXIT_SUCCESS;
+  
+  switch (game->lines.buff[game->player.y][game->player.x]) {
+    case CHAR_LIGHT:
+      game->lines.buff[game->player.y][game->player.x] = CHAR_LIGHT_ON;
+    break;
+    case CHAR_LIGHT_ON:
+      game->lines.buff[game->player.y][game->player.x] = CHAR_LIGHT;
+    break;
   }
+  game_print_player(game);
   return EXIT_FAILURE;
 }
 
@@ -138,22 +148,21 @@ int game_move_player(game_t* game)
   return EXIT_SUCCESS;
 }
 
-#define PLAYER_PRINT(S) mvprintw(game->player.y, game->player.x, S)
 void game_print_player(game_t* game)
 {
   attr_char(game->lines.buff[game->player.y][game->player.x], on);
   switch (game->player.dir) {
     case down:
-    PLAYER_PRINT("↓");
+    gameprintonplayer(game, 'v');
     break;
     case right:
-    PLAYER_PRINT("→");
+    gameprintonplayer(game, '>');
     break;
     case left:
-    PLAYER_PRINT("←");
+    gameprintonplayer(game, '<');
     break;
     case up:
-    PLAYER_PRINT("↑");
+    gameprintonplayer(game, '^');
     break;
   }
   attr_char(game->lines.buff[game->player.y][game->player.x], off);
@@ -188,10 +197,14 @@ lines_t get_lines(char* input)
     buff[i] = strtok(NULL, "\n");
   }
   size_t* sizes = malloc(sizeof(size_t)*i);
+  int max_size = 0;
   for (int j = 0; j < i; j++) {
     sizes[j] = strlen(buff[j]);
+    if (sizes[j] > max_size) {
+      max_size = sizes[j];
+    }
   }
-  lines_t out = {.buff=buff, .size=i, sizes=sizes};
+  lines_t out = {.buff=buff, .size=i, sizes=sizes, .max_size=max_size};
   return out;
 }
 
@@ -201,14 +214,15 @@ void game_redraw(game_t* game)
     char* line = game->lines.buff[y];
     for (int x = 0; x < game->lines.sizes[y]; x++) {
       attr_char(line[x], on);
-      mvprintw(y, x, " ");
+      mvwaddch(game->win, y, x, ' ');\
       attr_char(line[x], off);
     }
   }
   game_print_player(game);
+  wrefresh(game->win);
 }
 
-player_t lines_draw_ncurses_return_player(lines_t lines)
+player_t parse_lines_return_player(lines_t lines)
 {
   player_t player = {.x=0, .y=0, .dir=DIR_MIN+1};
   bool player_defined = false;
@@ -220,14 +234,8 @@ player_t lines_draw_ncurses_return_player(lines_t lines)
       #endif /* if __DEBUG */
       switch (line[x]) {
         case CHAR_PATH:
-          attr_path(on);
-          mvprintw(y, x, " ");
-          attr_path(off);
         break;
         case CHAR_LIGHT:
-          attr_light(on);
-          mvprintw(y, x, " ");
-          attr_light(off);
         break;
         case CHAR_PRIGHT:
           PLAYER_INIT(right)
@@ -247,7 +255,7 @@ player_t lines_draw_ncurses_return_player(lines_t lines)
         #if __WARN | __DEBUG
         fprintf(stderr, "warning: invalid char '%c' replaced with '%c'", *line, CHAR_IGNORE);
         #endif /* if __WARN | __DEBUG */
-        line[x] = ' ';
+        line[x] = CHAR_IGNORE;
       }
     }
   }

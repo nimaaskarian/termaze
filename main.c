@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
   #if __DEBUG
   fputs("game init successful\n", stderr);
   #endif // __DEBUG
-  refresh();
+  wrefresh(game.win);
 
   char line[256];
   while (fgets(line, sizeof(line), stdin)) {
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
     #if __DEBUG
     fprintf(stderr, "info: cmd got \"%s\"\n", line);
     #endif // __DEBUG
-    refresh();
+    wrefresh(game.win);
   }
   for (;;) {
     sleep(UINT_MAX);
