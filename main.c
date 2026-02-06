@@ -1,15 +1,28 @@
+#include <curses.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <limits.h>
 #include <ctype.h>
 #include <unistd.h>
-#include <time.h>
 #include <getopt.h>
 #include <ncurses.h>
 
 #include "termaze.h"
+game_t game;
+
+void handle_winch(int sig)
+{
+    endwin();
+    // Needs to be called after an endwin() so ncurses will initialize
+    // itself with the new terminal dimensions.
+    refresh();
+    clear();
+    game_redraw(&game);
+    refresh();
+}
 
 int main(int argc, char *argv[])
 {
@@ -56,18 +69,19 @@ int main(int argc, char *argv[])
   #if __DEBUG
   fputs("game init started\n", stderr);
   #endif // __DEBUG
-  game_t game = game_init(buffer);
+  game = game_init(buffer);
+  struct sigaction sa;
+  memset(&sa, 0, sizeof(struct sigaction));
+  sa.sa_handler = handle_winch;
+  sigaction(SIGWINCH, &sa, NULL);
   #if __DEBUG
   fputs("game init successful\n", stderr);
   #endif // __DEBUG
   refresh();
 
   char line[256];
-  struct timespec ts;
-  ts.tv_sec = tick_time_ms / 1000;
-  ts.tv_nsec = (tick_time_ms % 1000) * 1000000;
   while (fgets(line, sizeof(line), stdin)) {
-    nanosleep(&ts, NULL);
+    napms(tick_time_ms);
     if (strcmp(line, "move\n") == 0) {
       game_move_player(&game);
     } else if (strcmp(line, "rotate\n") == 0) {

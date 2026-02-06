@@ -13,6 +13,9 @@ void ncurses_init()
   noecho();
   curs_set(0);
   start_color();
+  nodelay(stdscr, true);
+  keypad(stdscr, true);
+  timeout(0);
   init_pair(BLACK, COLOR_WHITE, COLOR_BLACK);
   init_pair(WHITE, COLOR_BLACK, COLOR_WHITE);
   init_pair(GREEN, COLOR_BLACK, COLOR_GREEN);
@@ -31,28 +34,35 @@ game_t game_init(char *input)
   return game;
 }
 
-#define ATTR_ON_LIGHT() {\
+#define attr_light(on) {\
   attron(COLOR_PAIR(WHITE));\
 }
 
-#define ATTR_ON_LIGHT_ON() {\
+#define attr_light_on(on) {\
   attron(COLOR_PAIR(YELLOW));\
 }
 
-#define ATTR_ON_PATH() {\
+#define attr_path(on) {\
   attron(COLOR_PAIR(GREEN));\
 }
 
-#define ATTR_ON_CHAR(C) {\
+#define attr_ignore(on) {\
+  attron(COLOR_PAIR(BLACK));\
+}
+
+#define attr_char(C, on) {\
     switch (C) {\
+      case CHAR_IGNORE:\
+        attr_ignore(on);\
+      break;\
       case CHAR_PATH:\
-        ATTR_ON_PATH();\
+        attr_path(on);\
       break;\
       case CHAR_LIGHT:\
-        ATTR_ON_LIGHT();\
+        attr_light(on);\
       break;\
       case CHAR_LIGHT_ON:\
-        ATTR_ON_LIGHT_ON();\
+        attr_light_on(on);\
       break;\
     }\
 }
@@ -60,8 +70,9 @@ game_t game_init(char *input)
 // helper for game_move_player
 #define PRINT_CUR_CHAR() {\
     char ch = game->lines.buff[game->player.y][game->player.x];\
-    ATTR_ON_CHAR(ch);\
+    attr_char(ch, on);\
     mvprintw(game->player.y, game->player.x, " ");\
+    attr_char(ch, off);\
 }
 
 // give -1 to rotate for counter clockwise, and 1 for clockwise
@@ -131,7 +142,7 @@ int game_move_player(game_t* game)
 #define PLAYER_PRINT(S) mvprintw(game->player.y, game->player.x, S)
 void game_print_player(game_t* game)
 {
-  ATTR_ON_CHAR(game->lines.buff[game->player.y][game->player.x]);
+  attr_char(game->lines.buff[game->player.y][game->player.x], on);
   switch (game->player.dir) {
     case down:
     PLAYER_PRINT("↓");
@@ -146,6 +157,7 @@ void game_print_player(game_t* game)
     PLAYER_PRINT("↑");
     break;
   }
+  attr_char(game->lines.buff[game->player.y][game->player.x], off);
 }
 
 #define PLAYER_INIT(DIR) {\
@@ -184,6 +196,19 @@ lines_t get_lines(char* input)
   return out;
 }
 
+void game_redraw(game_t* game)
+{
+  for (int y = 0; y < game->lines.size; y++) {
+    char* line = game->lines.buff[y];
+    for (int x = 0; x < game->lines.sizes[y]; x++) {
+      attr_char(line[x], on);
+      mvprintw(y, x, " ");
+      attr_char(line[x], off);
+    }
+  }
+  game_print_player(game);
+}
+
 player_t lines_draw_ncurses_return_player(lines_t lines)
 {
   player_t player;
@@ -196,12 +221,14 @@ player_t lines_draw_ncurses_return_player(lines_t lines)
       #endif /* if __DEBUG */
       switch (line[x]) {
         case CHAR_PATH:
-          ATTR_ON_PATH();
+          attr_path(on);
           mvprintw(y, x, " ");
+          attr_path(off);
         break;
         case CHAR_LIGHT:
-          ATTR_ON_LIGHT();
+          attr_light(on);
           mvprintw(y, x, " ");
+          attr_light(off);
         break;
         case CHAR_PRIGHT:
           PLAYER_INIT(right)

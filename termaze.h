@@ -37,6 +37,7 @@ typedef struct game {
 
 void ncurses_init();
 lines_t get_lines(char* input);
+void game_redraw(game_t* game);
 player_t lines_draw_ncurses_return_player(lines_t lines);
 game_t game_init(char* input);
 void game_print_player(game_t* game);
