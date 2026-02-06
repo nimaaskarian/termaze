@@ -28,44 +28,11 @@ game_t game_init(char *input)
   player_t player = parse_lines_return_player(lines);
   game_t game = {.player = player, .lines = lines};
   game.win = newwin(lines.size, lines.max_size, 0, 0);
-  box(game.win, 0, 0);
   game_redraw(&game);
   return game;
 }
 
-#define attr_light(on) {\
-  wattron(game->win, COLOR_PAIR(WHITE));\
-}
-
-#define attr_light_on(on) {\
-  wattron(game->win, COLOR_PAIR(YELLOW));\
-}
-
-#define attr_path(on) {\
-  wattron(game->win, COLOR_PAIR(GREEN));\
-}
-
-#define attr_ignore(on) {\
-  wattron(game->win, COLOR_PAIR(BLACK));\
-}
-
-#define attr_char(C, on) {\
-    switch (C) {\
-      case CHAR_IGNORE:\
-        attr_ignore(on);\
-      break;\
-      case CHAR_PATH:\
-        attr_path(on);\
-      break;\
-      case CHAR_LIGHT:\
-        attr_light(on);\
-      break;\
-      case CHAR_LIGHT_ON:\
-        attr_light_on(on);\
-      break;\
-    }\
-}
-
+// helper
 #define gameprintonplayer(game, S) {\
   mvwprintw(game->win, game->player.y, game->player.x, S);\
 }
@@ -73,9 +40,8 @@ game_t game_init(char *input)
 // helper for game_move_player
 #define PRINT_CUR_CHAR() {\
     char ch = game->lines.buff[game->player.y][game->player.x];\
-    attr_char(ch, on);\
+    ATTR_CHAR(ch);\
     gameprintonplayer(game, " ");\
-    attr_char(ch, off);\
     wrefresh(game->win);\
 }
 
@@ -83,10 +49,10 @@ game_t game_init(char *input)
 void game_rotate_player(game_t* game, int rotate)
 {
   game->player.dir+=rotate;
-  if (game->player.dir == DIR_MIN) {
+  if (game->player.dir <= DIR_MIN) {
     game->player.dir = DIR_MAX-1;
   }
-  if (game->player.dir == DIR_MAX) {
+  if (game->player.dir >= DIR_MAX) {
     game->player.dir = DIR_MIN+1;
   }
   game_print_player(game);
@@ -96,21 +62,34 @@ int game_light(game_t* game)
 {
   
   switch (game->lines.buff[game->player.y][game->player.x]) {
-    case CHAR_LIGHT:
-      game->lines.buff[game->player.y][game->player.x] = CHAR_LIGHT_ON;
+    case LIGHT:
+      game->lines.buff[game->player.y][game->player.x] = LIGHT_ON;
     break;
-    case CHAR_LIGHT_ON:
-      game->lines.buff[game->player.y][game->player.x] = CHAR_LIGHT;
+    case LIGHT_ON:
+      game->lines.buff[game->player.y][game->player.x] = LIGHT;
     break;
   }
   game_print_player(game);
   return EXIT_FAILURE;
 }
 
+#define die_dir_min_max_cases() case DIR_MIN:\
+    case DIR_MAX:\
+      endwin();\
+      fprintf(stderr,\
+              "invalid direction (%d) at %s:%d.\n"\
+              "this shouldn't have happened. post the level (or level "\
+              "generator) and the "\
+              "script produced the stdin at https://github.com/nimaaskarian/termaze/issues",\
+              game->player.dir, __FILE__, __LINE__);\
+      exit(1);\
+    break;\
+
 // returns EXIT_SUCCESS (0) on success. EXIT_FAILIURE otherwise
 int game_move_player(game_t* game)
 {
   switch (game->player.dir) {
+    die_dir_min_max_cases();
     case up:
       if (game->player.y == 0 
         || game->lines.buff[game->player.y-1][game->player.x] == ' ') {
@@ -150,22 +129,22 @@ int game_move_player(game_t* game)
 
 void game_print_player(game_t* game)
 {
-  attr_char(game->lines.buff[game->player.y][game->player.x], on);
+  ATTR_CHAR(game->lines.buff[game->player.y][game->player.x]);
   switch (game->player.dir) {
+    die_dir_min_max_cases();
     case down:
-    gameprintonplayer(game, "↓");
+    gameprintonplayer(game, S_PLAYER_DOWN);
     break;
     case right:
-    gameprintonplayer(game, "→");
+    gameprintonplayer(game, S_PLAYER_RIGHT);
     break;
     case left:
-    gameprintonplayer(game, "←");
+    gameprintonplayer(game, S_PLAYER_LEFT);
     break;
     case up:
-    gameprintonplayer(game, "↑");
+    gameprintonplayer(game, S_PLAYER_UP);
     break;
   }
-  attr_char(game->lines.buff[game->player.y][game->player.x], off);
   wrefresh(game->win);
 }
 
@@ -191,8 +170,10 @@ lines_t get_lines(char* input)
   while (buff[i]) {
     i++;
     if (i >= MAX_LINE_SIZE) {
-      endwin();\
-      fprintf(stderr, "error: max line size exeeded. this shouldn't have happend. if it did, shame the author in https://github.com/nimaaskarian/termaze/issues\n");
+      endwin();
+      fprintf(stderr, "error: max line size exeeded. this shouldn't have "
+                      "happend. if it did, shame the author in "
+                      "https://github.com/nimaaskarian/termaze/issues\n");
       exit(1);
     }
     buff[i] = strtok(NULL, "\n");
@@ -214,9 +195,8 @@ void game_redraw(game_t* game)
   for (int y = 0; y < game->lines.size; y++) {
     char* line = game->lines.buff[y];
     for (int x = 0; x < game->lines.sizes[y]; x++) {
-      attr_char(line[x], on);
+      ATTR_CHAR(line[x]);
       mvwprintw(game->win, y, x, " ");\
-      attr_char(line[x], off);
     }
   }
   game_print_player(game);
@@ -233,29 +213,29 @@ player_t parse_lines_return_player(lines_t lines)
       fprintf(stderr, "x: %d, y: %d\n", x, y);
       #endif /* if __DEBUG */
       switch (line[x]) {
-        case CHAR_PATH:
+        case PATH:
         break;
-        case CHAR_LIGHT:
+        case LIGHT:
         break;
-        case CHAR_PRIGHT:
+        case PLAYER_RIGHT:
           PLAYER_INIT(right)
         break;
-        case CHAR_PUP:
+        case PLAYER_UP:
           PLAYER_INIT(up)
         break;
-        case CHAR_PDOWN:
+        case PLAYER_DOWN:
           PLAYER_INIT(down)
         break;
-        case CHAR_PLEFT:
+        case PLAYER_LEFT:
           PLAYER_INIT(left)
         break;
-        case CHAR_IGNORE:
+        case IGNORE:
         break;
         default:
         #if __WARN | __DEBUG
-        fprintf(stderr, "warning: invalid char '%c' replaced with '%c'", *line, CHAR_IGNORE);
+        fprintf(stderr, "warning: invalid char '%c' replaced with '%c'", *line, IGNORE);
         #endif /* if __WARN | __DEBUG */
-        line[x] = CHAR_IGNORE;
+        line[x] = IGNORE;
       }
     }
   }

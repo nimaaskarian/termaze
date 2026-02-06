@@ -16,4 +16,4 @@ install: all
 	${CC} -c ${CFLAGS} $<
 
 clean:
-	rm *.o ${BIN} || true
+	rm -f *.o ${BIN} || true
