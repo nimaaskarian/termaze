@@ -26,7 +26,6 @@ void ncurses_init()
 
 game_t game_init(char *input)
 {
-  ncurses_init();
   lines_t lines = get_lines(input);
   player_t player = lines_draw_ncurses_return_player(lines);
   game_t game = {.player = player, .lines = lines};
@@ -211,7 +210,7 @@ void game_redraw(game_t* game)
 
 player_t lines_draw_ncurses_return_player(lines_t lines)
 {
-  player_t player;
+  player_t player = {.x=0, .y=0, .dir=DIR_MIN+1};
   bool player_defined = false;
   for (int y = 0; y < lines.size; y++) {
     char* line = lines.buff[y];

@@ -12,10 +12,10 @@
 #define CHAR_PUP '^'
 typedef enum direction {
   DIR_MIN=-1,
-  up = 0,
   right,
   down,
   left,
+  up,
   DIR_MAX,
 } direction_t;
 
