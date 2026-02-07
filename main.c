@@ -192,7 +192,9 @@ void handle_winch(int sig)
   clear();
   game_redraw(&app.game);
   getmaxyx(stdscr, app.maxy, app.maxx);
+  #if __DEBUG
   fprintf(stderr, "x: %d, y: %d\n", app.maxx, app.maxy);
+  #endif //__DEBUG
   wresize(app.win, 2, app.maxx);
   if (app.msg) {
     mvwprintw(app.win, 0, 0, "%s", app.msg);
