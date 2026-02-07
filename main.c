@@ -11,6 +11,7 @@
 #include <ncurses.h>
 
 #include "termaze.h"
+#include "util.h"
 game_t game;
 
 void handle_winch(int sig)
@@ -61,8 +62,7 @@ int main(int argc, char *argv[])
     }
   }
   if (argc - optind != 1 && (!!level_generator == (argc - optind != 0))) {
-    fputs("usage: termaze [OPTION]... [FILE]\n", stderr);
-    return EXIT_FAILURE;
+    die("usage: termaze [OPTION]... [FILE]\n");
   }
   char * level = 0;
   size_t length;
@@ -80,8 +80,7 @@ int main(int argc, char *argv[])
     sprintf(cmd, "'%s' %d %d", level_generator, maxy, maxx);
     FILE* pipe = popen(cmd, "r");
     if (!pipe) {
-      fputs("error: failed running generator command\n", stderr);
-      return EXIT_FAILURE;
+      die("fatal: failed running generator command\n");
     }
     char buffer[4096];
     int size = 0;
@@ -101,8 +100,7 @@ int main(int argc, char *argv[])
   } else {
     FILE* fp = fopen(argv[optind++], "r");
     if (fp == NULL) {
-      fputs("error: failed opening file\n", stderr);
-      return EXIT_FAILURE;
+      die("fatal: failed opening file\n");
     }
     fseek(fp, 0, SEEK_END);
     length = ftell(fp);

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <locale.h>
 #include "termaze.h"
+#include "util.h"
 
 void ncurses_init()
 {
@@ -95,17 +96,16 @@ bool game_check_finished(game_t* game)
   return true;
 }
 
-#define die_dir_min_max_cases() case DIR_MIN:\
-    case DIR_MAX:\
-      endwin();\
-      fprintf(stderr,\
-              "invalid direction (%d) at %s:%d.\n"\
-              "this shouldn't have happened. post the level (or level "\
-              "generator) and the "\
-              "script produced the stdin at https://github.com/nimaaskarian/termaze/issues",\
-              game->player.dir, __FILE__, __LINE__);\
-      exit(1);\
-    break;\
+#define die_dir_min_max_cases()                                                \
+  case DIR_MIN:                                                                \
+  case DIR_MAX:                                                                \
+    die("fatal: invalid direction (%d) at %s:%d.\n"                            \
+        "this shouldn't have happened. post the level (or level "              \
+        "generator) and the "                                                  \
+        "script produced the stdin at "                                        \
+        "https://github.com/nimaaskarian/termaze/issues",                      \
+        game->player.dir, __FILE__, __LINE__);                                 \
+    break;
 
 // returns EXIT_SUCCESS (0) on success. EXIT_FAILIURE otherwise
 int game_move_player(game_t* game)
@@ -172,9 +172,7 @@ void game_print_player(game_t* game)
 
 #define PLAYER_INIT(DIR) {\
 if (player_defined) {\
-  endwin();\
-  fprintf(stderr, "error: player already defined. line %d:%d\n", x,y);\
-  exit(1);\
+  die("error: player already defined. line %d:%d\n", x,y);\
 }\
 player.x = x;\
 player.y = y;\
@@ -192,11 +190,9 @@ lines_t get_lines(char* input)
   while (buff[i]) {
     i++;
     if (i >= MAX_LINE_SIZE) {
-      endwin();
-      fprintf(stderr, "error: max line size exeeded. this shouldn't have "
-                      "happend. if it did, shame the author in "
-                      "https://github.com/nimaaskarian/termaze/issues\n");
-      exit(1);
+        die("error: max line size exeeded. this shouldn't have "
+            "happend. if it did, shame the author in "
+            "https://github.com/nimaaskarian/termaze/issues\n");
     }
     buff[i] = strtok(NULL, "\n");
   }

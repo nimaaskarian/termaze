@@ -1,6 +1,6 @@
 include config.mk
 
-SRC=main.c termaze.c
+SRC=main.c termaze.c util.c
 OBJ=${SRC:.c=.o}
 BIN=termaze
 
