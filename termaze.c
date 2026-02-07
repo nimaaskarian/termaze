@@ -16,7 +16,6 @@ void ncurses_init()
   curs_set(0);
   nodelay(stdscr, false);
   start_color();
-  keypad(stdscr, true);
   init_pair(BLACK, COLOR_WHITE, COLOR_BLACK);
   init_pair(WHITE, COLOR_BLACK, COLOR_WHITE);
   init_pair(GREEN, COLOR_BLACK, COLOR_GREEN);
@@ -172,7 +171,7 @@ void game_print_player(game_t* game)
 
 #define PLAYER_INIT(DIR) {\
 if (player_defined) {\
-  die("error: player already defined. line %d:%d\n", x,y);\
+  die("error: player already defined. line %d:%d", x,y);\
 }\
 player.x = x;\
 player.y = y;\
@@ -192,7 +191,7 @@ lines_t get_lines(char* input)
     if (i >= MAX_LINE_SIZE) {
         die("error: max line size exeeded. this shouldn't have "
             "happend. if it did, shame the author in "
-            "https://github.com/nimaaskarian/termaze/issues\n");
+            "https://github.com/nimaaskarian/termaze/issues");
     }
     buff[i] = strtok(NULL, "\n");
   }
