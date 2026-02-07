@@ -123,32 +123,57 @@ int main(int argc, char *argv[])
   #endif // __DEBUG
 
   char line[256];
+  WINDOW* info_win = newwin(2, maxx, maxy-2, 0);
+  int failed = 0;
+  int failed_sum = 0;
+  char * msg = NULL;
+  char * prevmsg = NULL;
   while (fgets(line, sizeof(line), stdin)) {
     napms(tick_time_ms);
     if (strcmp(line, "move\n") == 0) {
-      game_move_player(&game);
+      failed = game_move_player(&game);
+      msg = "move";
     } else if (strcmp(line, "rotate\n") == 0) {
-      game_rotate_player(&game, 1);
+      failed = game_rotate_player(&game, 1);
     } else if (strcmp(line, "rotate -90\n") == 0) {
-      game_rotate_player(&game, -1);
+      failed = game_rotate_player(&game, -1);
     } else if (strcmp(line, "light\n") == 0) {
-      game_light(&game);
+      failed = game_light(&game);
+      msg = "light";
+    }
+    if (failed && msg != NULL) {
+      if (prevmsg == NULL || strcmp(msg, prevmsg) == 0) {
+        failed_sum++;
+      } else {
+        failed_sum=1;
+      }
+      mvwprintw(info_win, 1, 0, "%s failed %d time(s)", msg, failed_sum);
+      prevmsg=msg;
+      wrefresh(info_win);
     }
     #if __DEBUG
     fprintf(stderr, "info: cmd got \"%s\"\n", line);
     #endif // __DEBUG
   }
-  WINDOW* win = newwin(1, maxx, maxy-1, 0);
+
+  // when pipe is finished redirect stdin to terminal to ensure blocking getch
+  freopen("/dev/tty", "r", stdin);
+  wclear(info_win);
   if (game_check_finished(&game)) {
-    wattron(win, COLOR_PAIR(GREEN));
-    mvwprintw(win, 0, 0, "game over. congratulations!");
+    wattron(info_win, COLOR_PAIR(GREEN));
+    mvwprintw(info_win, 0, 0, "game over. congratulations!");
   } else {
-    wattron(win, COLOR_PAIR(RED));
-    mvwprintw(win, 0, 0, "game stil not over. but your moves are.");
+    wattron(info_win, COLOR_PAIR(RED));
+    mvwprintw(info_win, 0, 0, "game stil not over. but your moves are.");
   }
-  wrefresh(win);
-  for (;;) {
-    sleep(UINT_MAX);
+  mvwprintw(info_win, 1, 0, "press 'q' to quit");
+  wrefresh(info_win);
+  int ch;
+  while ((ch = wgetch(info_win))) {
+    if (ch == 'q') {
+      endwin();
+      break;
+    }
   }
   return EXIT_SUCCESS;
 }

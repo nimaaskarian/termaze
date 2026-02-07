@@ -73,7 +73,7 @@ game_t game_init(char* input);
 bool game_check_finished(game_t* game);
 void game_print_player(game_t* game);
 int game_move_player(game_t* game);
-void game_rotate_player(game_t* game, int rotate);
+int game_rotate_player(game_t* game, int rotate);
 int game_light(game_t* game);
 
 enum color {

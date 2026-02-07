@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ncurses.h>
@@ -12,8 +13,9 @@ void ncurses_init()
   cbreak();
   noecho();
   curs_set(0);
+  nodelay(stdscr, false);
   start_color();
-  nodelay(stdscr, true);
+  keypad(stdscr, true);
   init_pair(BLACK, COLOR_WHITE, COLOR_BLACK);
   init_pair(WHITE, COLOR_BLACK, COLOR_WHITE);
   init_pair(GREEN, COLOR_BLACK, COLOR_GREEN);
@@ -24,11 +26,17 @@ void ncurses_init()
 
 game_t game_init(char *input)
 {
+  #if __DEBUG
+  fputs("game init started\n", stderr);
+  #endif // __DEBUG
   lines_t lines = get_lines(input);
   player_t player = parse_lines_return_player(lines);
   game_t game = {.player = player, .lines = lines};
   game.win = newwin(lines.size, lines.max_size, 0, 0);
   game_redraw(&game);
+  #if __DEBUG
+  fputs("game init successful\n", stderr);
+  #endif // __DEBUG
   return game;
 }
 
@@ -46,7 +54,7 @@ game_t game_init(char *input)
 }
 
 // give -1 to rotate for counter clockwise, and 1 for clockwise
-void game_rotate_player(game_t* game, int rotate)
+int game_rotate_player(game_t* game, int rotate)
 {
   game->player.dir+=rotate;
   if (game->player.dir <= DIR_MIN) {
@@ -56,6 +64,7 @@ void game_rotate_player(game_t* game, int rotate)
     game->player.dir = DIR_MIN+1;
   }
   game_print_player(game);
+  return EXIT_SUCCESS;
 }
 
 int game_light(game_t* game)
@@ -67,16 +76,18 @@ int game_light(game_t* game)
     case LIGHT_ON:
       game->lines.buff[game->player.y][game->player.x] = LIGHT;
     break;
+    default:
+      return EXIT_FAILURE;
   }
   game_print_player(game);
-  return EXIT_FAILURE;
+  return EXIT_SUCCESS;
 }
 
 bool game_check_finished(game_t* game)
 {
   for (int y = 0; y < game->lines.size; y++) {
     for (int x = 0; x < game->lines.sizes[y]; x++) {
-      if (game->lines.buff[x][y] == LIGHT) {
+      if (game->lines.buff[y][x] == LIGHT) {
         return false;
       }
     }
