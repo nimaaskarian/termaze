@@ -29,7 +29,7 @@ typedef struct app {
 
 void app_init_level(app_t* app, char** argv, int argc);
 void app_print_quit(app_t* app);
-void app_play_line(app_t* app, char line[256], char**prevmsg, int* failed_sum);
+int app_play_line(app_t* app, char line[256], char**prevmsg, int* failed_sum);
 void handle_winch(int sig);
 int intlen(int n);
 
@@ -91,18 +91,25 @@ int main(int argc, char *argv[])
     char line[256];
     int failed_sum = 0;
     char * prevmsg = NULL;
+    bool finished = false;
     if (app.solver) {
       FILE* pipe = popen(app.solver, "r");
       if (!pipe) {
         die("fatal: failed running solver command");
       }
       while (fgets(line, sizeof(line), pipe) != NULL) {
-        app_play_line(&app, line, &prevmsg, &failed_sum);
+        if (app_play_line(&app, line, &prevmsg, &failed_sum)) {
+          finished = true;
+          break;
+        }
       }
       pclose(pipe);
     } else {
       while (fgets(line, sizeof(line), stdin)) {
-        app_play_line(&app, line, &prevmsg, &failed_sum);
+        if (app_play_line(&app, line, &prevmsg, &failed_sum)) {
+          finished = true;
+          break;
+        }
       }
     }
 
@@ -110,7 +117,7 @@ int main(int argc, char *argv[])
     freopen("/dev/tty", "r", stdin);
     wclear(app.win);
     FREE(app.msg);
-    if (game_check_finished(&app.game)) {
+    if (finished || game_check_finished(&app.game)) {
       app.msg = "game over. congratulations!";
       wattron(app.win, COLOR_PAIR(GREEN));
     } else {
@@ -152,7 +159,7 @@ void app_print_quit(app_t* app)
   }
 }
 
-void app_play_line(app_t* app, char line[256], char**prevmsg, int* failed_sum)
+int app_play_line(app_t* app, char line[256], char**prevmsg, int* failed_sum)
 {
   int failed = 0;
   char * msg = NULL;
@@ -166,6 +173,9 @@ void app_play_line(app_t* app, char line[256], char**prevmsg, int* failed_sum)
     failed = game_rotate_player(&app->game, -1);
   } else if (strcmp(line, "light\n") == 0) {
     failed = game_light(&app->game);
+    if (!failed && game_check_finished(&app->game)) {
+      return EXIT_FAILURE;
+    }
     msg = "light";
   }
   if (failed && msg != NULL) {
@@ -185,6 +195,7 @@ void app_play_line(app_t* app, char line[256], char**prevmsg, int* failed_sum)
     wrefresh(app->win);
   }
   DEBUG("info: cmd got \"%s\"\n", line);
+  return EXIT_SUCCESS;
 }
 
 void app_init_level(app_t* app, char** argv, int argc)
