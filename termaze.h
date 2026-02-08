@@ -75,6 +75,7 @@ void game_print_player(game_t* game);
 int game_move_player(game_t* game);
 int game_rotate_player(game_t* game, int rotate);
 int game_light(game_t* game);
+void game_free(game_t* game);
 
 enum color {
   WHITE = 1,

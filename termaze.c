@@ -24,19 +24,22 @@ void ncurses_init()
   init_pair(BLUE, COLOR_WHITE, COLOR_BLUE);
 }
 
+void game_free(game_t* game)
+{
+  delwin(game->win);
+  FREE(game->lines.sizes);
+  FREE(game->lines.buff);
+}
+
 game_t game_init(char *input)
 {
-  #if __DEBUG
-  fputs("game init started\n", stderr);
-  #endif // __DEBUG
+  DEBUG("game init started\n");
   lines_t lines = get_lines(input);
   player_t player = parse_lines_return_player(lines);
   game_t game = {.player = player, .lines = lines};
   game.win = newwin(lines.size, lines.max_size, 0, 0);
   game_redraw(&game);
-  #if __DEBUG
-  fputs("game init successful\n", stderr);
-  #endif // __DEBUG
+  DEBUG("game init successful\n");
   return game;
 }
 
@@ -180,30 +183,35 @@ player_defined = true;\
 line[x] = 'P';\
 }
 
-// TODO: use \n\r in windows. also fix the fixed size line size
+// TODO: use \n\r in windows
 lines_t get_lines(char* input)
 {
-  char** buff = malloc(sizeof(char *[MAX_LINE_SIZE]));
-  int i = 0;
-  buff[i] = strtok(input, "\n");
-  while (buff[i]) {
-    i++;
-    if (i >= MAX_LINE_SIZE) {
-        die("error: max line size exeeded. this shouldn't have "
-            "happend. if it did, shame the author in "
-            "https://github.com/nimaaskarian/termaze/issues");
+  size_t len = strlen(input);
+  int newline_count = 0;
+  for (int i = 0; i < len; i++) {
+    if (input[i] == '\n') {
+      newline_count++;
     }
-    buff[i] = strtok(NULL, "\n");
   }
-  size_t* sizes = malloc(sizeof(size_t)*i);
+  char** buff = malloc(sizeof(char *)*newline_count);
+  size_t* sizes = malloc(sizeof(size_t) * newline_count);
   int max_size = 0;
-  for (int j = 0; j < i; j++) {
-    sizes[j] = strlen(buff[j]);
-    if (sizes[j] > max_size) {
-      max_size = sizes[j];
+
+  buff[0] = strtok(input, "\n");
+  sizes[0] = strlen(buff[0]);
+  for (int i = 1; i < newline_count; i ++) {
+    buff[i] = strtok(NULL, "\n");
+    if (buff[i] == NULL) {
+      break;
+    }
+    DEBUG("BUFF %s, %d\n", buff[i], i);
+    sizes[i] = strlen(buff[i]);
+    if (sizes[i] > max_size) {
+      max_size = sizes[i];
     }
   }
-  lines_t out = {.buff=buff, .size=i, sizes=sizes, .max_size=max_size};
+
+  lines_t out = {.buff=buff, .size=newline_count, sizes=sizes, .max_size=max_size};
   return out;
 }
 
@@ -226,9 +234,7 @@ player_t parse_lines_return_player(lines_t lines)
   for (int y = 0; y < lines.size; y++) {
     char* line = lines.buff[y];
     for (int x = 0; x < lines.sizes[y]; x++) {
-      #if __DEBUG
-      fprintf(stderr, "x: %d, y: %d\n", x, y);
-      #endif /* if __DEBUG */
+      DEBUG("x: %d, y: %d\n", x, y);
       switch (line[x]) {
         case PATH:
         break;
@@ -249,9 +255,7 @@ player_t parse_lines_return_player(lines_t lines)
         case IGNORE:
         break;
         default:
-        #if __WARN | __DEBUG
-        fprintf(stderr, "warning: invalid char '%c' replaced with '%c'", *line, IGNORE);
-        #endif /* if __WARN | __DEBUG */
+        DEBUG("warning: invalid char '%c' replaced with '%c'", *line, IGNORE);
         line[x] = IGNORE;
       }
     }

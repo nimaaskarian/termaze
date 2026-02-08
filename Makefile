@@ -6,6 +6,10 @@ BIN=termaze
 
 all: ${BIN}
 
+debug: CFLAGS=${INCS} -g -D_DEBUG -O0
+debug: LDFLAGS=${LIBS} -g -D_DEBUG -O0
+debug: ${BIN}
+
 $(BIN): ${OBJ}
 	${CC} ${OBJ} -o $@ ${LDFLAGS}
 
