@@ -6,8 +6,11 @@ BIN=termaze
 
 all: ${BIN}
 
-debug: CFLAGS=${INCS} -g -D_DEBUG -O0
-debug: LDFLAGS=${LIBS} -g -D_DEBUG -O0
+.c.o:
+	${CC} -c ${CFLAGS} $<
+
+debug: CFLAGS=${INCS} -g3 -D_DEBUG -O0
+debug: LDFLAGS=${LIBS} -g3 -D_DEBUG -O0
 debug: ${BIN}
 
 $(BIN): ${OBJ}
@@ -15,9 +18,6 @@ $(BIN): ${OBJ}
 
 install: all
 	cp -f ${BIN} ${DESTDIR}${PREFIX}/bin/${BIN}
-
-.c.o:
-	${CC} -c ${CFLAGS} $<
 
 clean:
 	rm -f *.o ${BIN} || true
